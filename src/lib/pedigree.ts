@@ -43,3 +43,13 @@ export function absoluteSlot(viewRoot: number, displaySlot: number): number {
   const i = displaySlot - 2 ** k
   return viewRoot * 2 ** k + i
 }
+
+export type Lineage = 'root' | 'paternal' | 'maternal'
+
+/** Which side of the currently-viewed root a display slot descends from. */
+export function lineageOf(displaySlot: number): Lineage {
+  if (displaySlot === 1) return 'root'
+  let s = displaySlot
+  while (s > 3) s = Math.floor(s / 2)
+  return s === 2 ? 'paternal' : 'maternal'
+}

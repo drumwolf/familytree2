@@ -8,11 +8,18 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover'
 import { Textarea } from '@/components/ui/textarea'
+import type { Lineage } from '@/lib/pedigree'
 import type { Person, PersonInput } from '@/lib/people'
 import { cn } from '@/lib/utils'
 
 export const NODE_WIDTH = 250
 export const NODE_HEIGHT = 60
+
+const LINEAGE_STYLES: Record<Lineage, string> = {
+  root: 'bg-gray-200 hover:bg-gray-300',
+  paternal: 'bg-red-100 hover:bg-red-200',
+  maternal: 'bg-blue-100 hover:bg-blue-200',
+}
 
 function blankInput(person: Person | undefined): PersonInput {
   return {
@@ -28,7 +35,7 @@ export function TreeNode({
   person,
   left,
   top,
-  isRoot,
+  lineage,
   onSave,
   onMakeRoot,
 }: {
@@ -36,10 +43,11 @@ export function TreeNode({
   person: Person | undefined
   left: number
   top: number
-  isRoot: boolean
+  lineage: Lineage
   onSave: (slot: number, input: PersonInput) => Promise<string | null>
   onMakeRoot: (slot: number) => void
 }) {
+  const isRoot = lineage === 'root'
   const [open, setOpen] = useState(false)
   const [form, setForm] = useState<PersonInput>(() => blankInput(person))
   const [saving, setSaving] = useState(false)
@@ -70,7 +78,8 @@ export function TreeNode({
     <Popover open={open} onOpenChange={handleOpenChange}>
       <PopoverTrigger
         className={cn(
-          'absolute flex flex-col justify-center overflow-hidden rounded-lg border border-zinc-400 bg-blue-50 px-3 py-1 text-left shadow-sm transition-colors hover:bg-blue-100',
+          'absolute flex flex-col justify-center overflow-hidden rounded-lg border border-zinc-400 px-3 py-1 text-left shadow-sm transition-colors',
+          LINEAGE_STYLES[lineage],
           isEmpty && 'items-center justify-center',
         )}
         style={{ left, top, width: NODE_WIDTH, height: NODE_HEIGHT }}

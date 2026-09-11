@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { NODE_HEIGHT, NODE_WIDTH, TreeNode } from '@/components/TreeNode'
 import { supabase } from '@/lib/supabase'
-import { absoluteSlot, allSlots, gridColumn, gridRow, GENERATIONS, TOTAL_SLOTS } from '@/lib/pedigree'
+import { absoluteSlot, allSlots, gridColumn, gridRow, lineageOf, GENERATIONS, TOTAL_SLOTS } from '@/lib/pedigree'
 import type { Person, PersonInput } from '@/lib/people'
 
 const TRUE_ROOT = 1
@@ -136,7 +136,7 @@ export function FamilyTree() {
                 person={people[slot]}
                 left={(gridColumn(displaySlot) - 1) * COL_WIDTH}
                 top={(gridRow(displaySlot) - 1) * ROW_UNIT}
-                isRoot={displaySlot === 1}
+                lineage={lineageOf(displaySlot)}
                 onSave={handleSave}
                 onMakeRoot={handleMakeRoot}
               />
