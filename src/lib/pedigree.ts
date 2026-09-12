@@ -13,15 +13,28 @@ function indexInGeneration(slot: number, generation: number): number {
   return slot - 2 ** (generation - 1)
 }
 
-/** Integer row for placement on a grid with 2^GENERATIONS rows, centering each
- * ancestor between the rows of the two children (in binary-tree terms) that
- * produced them. */
+// In the earliest generation shown, the gap within a father/mother pair is
+// smaller than the gap between different pairs.
+const WITHIN_PAIR_GAP = 1.5
+const BETWEEN_PAIR_GAP = 2
+
+/** Row for placement on a grid, centering each ancestor between the rows of
+ * the two children (in binary-tree terms) that produced them. In the
+ * earliest generation, rows are laid out directly with a tighter gap within
+ * each father/mother pair; every generation above that is simply the
+ * midpoint of its two children, so the tighter spacing propagates upward
+ * while the gap between different pairs stays unchanged. */
 export function gridRow(slot: number): number {
   const generation = generationOf(slot)
-  const index = indexInGeneration(slot, generation)
-  const spacing = 2 ** (GENERATIONS + 1 - generation)
-  const offset = 2 ** (GENERATIONS - generation) - 1
-  return index * spacing + offset + 1
+
+  if (generation === GENERATIONS) {
+    const index = indexInGeneration(slot, generation)
+    const pair = Math.floor(index / 2)
+    const withinPair = index % 2
+    return 1 + pair * (WITHIN_PAIR_GAP + BETWEEN_PAIR_GAP) + withinPair * WITHIN_PAIR_GAP
+  }
+
+  return (gridRow(2 * slot) + gridRow(2 * slot + 1)) / 2
 }
 
 export function gridColumn(slot: number): number {
