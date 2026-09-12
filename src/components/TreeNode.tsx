@@ -72,7 +72,7 @@ export function TreeNode({
     setOpen(false)
   }
 
-  const isEmpty = !person?.full_name
+  const isEmpty = !person?.full_name && !person?.birth_year && !person?.birthplace && !person?.notes
 
   return (
     <Popover open={open} onOpenChange={handleOpenChange}>
@@ -88,7 +88,7 @@ export function TreeNode({
           <span className="text-muted-foreground text-xl">?</span>
         ) : (
           <>
-            <span className="truncate text-sm font-medium">{person.full_name}</span>
+            <span className="truncate text-sm font-medium">{person?.full_name || '-'}</span>
             <span className="text-muted-foreground truncate text-xs">
               {[person.birth_year, person.birthplace].filter(Boolean).join(' · ')}
             </span>
