@@ -8,6 +8,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover'
 import { Textarea } from '@/components/ui/textarea'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import type { Lineage } from '@/lib/pedigree'
 import type { Person, PersonInput } from '@/lib/people'
 import { cn } from '@/lib/utils'
@@ -74,27 +75,40 @@ export function TreeNode({
 
   const isEmpty = !person?.full_name && !person?.birth_year && !person?.birthplace && !person?.notes
 
+  const trigger = (
+    <PopoverTrigger
+      className={cn(
+        'absolute flex flex-col justify-center overflow-hidden rounded-lg border border-zinc-400 px-3 py-1 text-left shadow-sm transition-colors',
+        LINEAGE_STYLES[lineage],
+        isEmpty && 'items-center justify-center',
+      )}
+      style={{ left, top, width: NODE_WIDTH, height: NODE_HEIGHT }}
+    >
+      {isEmpty ? (
+        <span className="text-muted-foreground text-xl">?</span>
+      ) : (
+        <>
+          <span className="truncate text-sm font-medium">{person?.full_name || '-'}</span>
+          <span className="text-muted-foreground truncate text-xs">
+            {[person.birth_year, person.birthplace].filter(Boolean).join(' · ')}
+          </span>
+        </>
+      )}
+    </PopoverTrigger>
+  )
+
   return (
     <Popover open={open} onOpenChange={handleOpenChange}>
-      <PopoverTrigger
-        className={cn(
-          'absolute flex flex-col justify-center overflow-hidden rounded-lg border border-zinc-400 px-3 py-1 text-left shadow-sm transition-colors',
-          LINEAGE_STYLES[lineage],
-          isEmpty && 'items-center justify-center',
-        )}
-        style={{ left, top, width: NODE_WIDTH, height: NODE_HEIGHT }}
-      >
-        {isEmpty ? (
-          <span className="text-muted-foreground text-xl">?</span>
-        ) : (
-          <>
-            <span className="truncate text-sm font-medium">{person?.full_name || '-'}</span>
-            <span className="text-muted-foreground truncate text-xs">
-              {[person.birth_year, person.birthplace].filter(Boolean).join(' · ')}
-            </span>
-          </>
-        )}
-      </PopoverTrigger>
+      {person?.notes ? (
+        <Tooltip>
+          <TooltipTrigger render={trigger} />
+          <TooltipContent side="right" className="whitespace-pre-wrap bg-gray-50 dark:bg-gray-900">
+            {person.notes}
+          </TooltipContent>
+        </Tooltip>
+      ) : (
+        trigger
+      )}
       <PopoverContent>
         <form onSubmit={handleSubmit} className="flex flex-col gap-3">
           <div className="flex flex-col gap-1.5">
