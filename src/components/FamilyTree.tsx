@@ -67,27 +67,26 @@ export function FamilyTree() {
       })
   }, [])
 
+  function upsertPerson(userId: string, slot: number, fields: Pick<Person, 'full_name' | 'birth_year' | 'birthplace' | 'notes'>) {
+    return supabase
+      .from('people')
+      .upsert({ user_id: userId, slot, ...fields }, { onConflict: 'user_id,slot' })
+      .select()
+      .single()
+  }
+
   async function handleSave(slot: number, input: PersonInput): Promise<string | null> {
     const {
       data: { user },
     } = await supabase.auth.getUser()
     if (!user) return 'Not signed in.'
 
-    const { data, error } = await supabase
-      .from('people')
-      .upsert(
-        {
-          user_id: user.id,
-          slot,
-          full_name: input.full_name || null,
-          birth_year: input.birth_year ? Number(input.birth_year) : null,
-          birthplace: input.birthplace || null,
-          notes: input.notes || null,
-        },
-        { onConflict: 'user_id,slot' },
-      )
-      .select()
-      .single()
+    const { data, error } = await upsertPerson(user.id, slot, {
+      full_name: input.full_name || null,
+      birth_year: input.birth_year ? Number(input.birth_year) : null,
+      birthplace: input.birthplace || null,
+      notes: input.notes || null,
+    })
 
     if (error) {
       console.error(error)
@@ -96,6 +95,59 @@ export function FamilyTree() {
 
     setPeople((prev) => ({ ...prev, [slot]: data as Person }))
     return null
+  }
+
+  // Swaps the data between two slots. If the target is empty, the source
+  // slot's row is deleted instead of swapped into (so it goes back to being
+  // blank rather than holding a copy of the target's empty fields).
+  async function handleMove(sourceSlot: number, targetSlot: number) {
+    if (sourceSlot === targetSlot) return
+    const sourcePerson = people[sourceSlot]
+    if (!sourcePerson) return
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+    if (!user) return
+
+    const targetPerson = people[targetSlot]
+
+    const { data: newTarget, error: targetError } = await upsertPerson(user.id, targetSlot, {
+      full_name: sourcePerson.full_name,
+      birth_year: sourcePerson.birth_year,
+      birthplace: sourcePerson.birthplace,
+      notes: sourcePerson.notes,
+    })
+    if (targetError) {
+      console.error(targetError)
+      return
+    }
+
+    if (targetPerson) {
+      const { data: newSource, error: sourceError } = await upsertPerson(user.id, sourceSlot, {
+        full_name: targetPerson.full_name,
+        birth_year: targetPerson.birth_year,
+        birthplace: targetPerson.birthplace,
+        notes: targetPerson.notes,
+      })
+      if (sourceError) {
+        console.error(sourceError)
+        return
+      }
+      setPeople((prev) => ({ ...prev, [targetSlot]: newTarget as Person, [sourceSlot]: newSource as Person }))
+      return
+    }
+
+    const { error: deleteError } = await supabase.from('people').delete().eq('user_id', user.id).eq('slot', sourceSlot)
+    if (deleteError) {
+      console.error(deleteError)
+      return
+    }
+    setPeople((prev) => {
+      const next = { ...prev, [targetSlot]: newTarget as Person }
+      delete next[sourceSlot]
+      return next
+    })
   }
 
   if (loading) return null
@@ -139,6 +191,7 @@ export function FamilyTree() {
                 lineage={lineageOf(displaySlot)}
                 onSave={handleSave}
                 onMakeRoot={handleMakeRoot}
+                onMove={handleMove}
               />
             )
           })}

@@ -40,6 +40,7 @@ export function TreeNode({
   lineage,
   onSave,
   onMakeRoot,
+  onMove,
 }: {
   slot: number
   person: Person | undefined
@@ -48,12 +49,15 @@ export function TreeNode({
   lineage: Lineage
   onSave: (slot: number, input: PersonInput) => Promise<string | null>
   onMakeRoot: (slot: number) => void
+  onMove: (sourceSlot: number, targetSlot: number) => void
 }) {
   const isRoot = lineage === 'root'
   const [open, setOpen] = useState(false)
   const [form, setForm] = useState<PersonInput>(() => blankInput(person))
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [isDragging, setIsDragging] = useState(false)
+  const [isDropTarget, setIsDropTarget] = useState(false)
 
   function handleOpenChange(next: boolean) {
     if (next) setForm(blankInput(person))
@@ -82,7 +86,15 @@ export function TreeNode({
         'flex h-full w-full flex-col justify-center overflow-hidden rounded-lg border border-zinc-400 px-3 py-1 text-left shadow-sm transition-colors',
         LINEAGE_STYLES[lineage],
         isEmpty && 'items-center justify-center',
+        isDragging && 'opacity-40',
       )}
+      draggable={!isEmpty}
+      onDragStart={(e) => {
+        e.dataTransfer.setData('text/plain', String(slot))
+        e.dataTransfer.effectAllowed = 'move'
+        setIsDragging(true)
+      }}
+      onDragEnd={() => setIsDragging(false)}
     >
       {isEmpty ? (
         <span className="text-muted-foreground text-xl">?</span>
@@ -99,7 +111,26 @@ export function TreeNode({
 
   return (
     <Popover open={open} onOpenChange={handleOpenChange}>
-      <div className="absolute" style={{ left, top, width: NODE_WIDTH, height: NODE_HEIGHT }}>
+      <div
+        className={cn('absolute', isDropTarget && 'rounded-lg ring-2 ring-primary ring-offset-1')}
+        style={{ left, top, width: NODE_WIDTH, height: NODE_HEIGHT }}
+        onDragOver={(e) => {
+          e.preventDefault()
+          e.dataTransfer.dropEffect = 'move'
+        }}
+        onDragEnter={() => setIsDropTarget(true)}
+        onDragLeave={(e) => {
+          if (!e.currentTarget.contains(e.relatedTarget as Node | null)) {
+            setIsDropTarget(false)
+          }
+        }}
+        onDrop={(e) => {
+          e.preventDefault()
+          setIsDropTarget(false)
+          const sourceSlot = Number(e.dataTransfer.getData('text/plain'))
+          if (!Number.isNaN(sourceSlot)) onMove(sourceSlot, slot)
+        }}
+      >
         {person?.notes ? (
           <Tooltip>
             <TooltipTrigger render={trigger} />
@@ -113,6 +144,7 @@ export function TreeNode({
         {!isRoot && (
           <button
             type="button"
+            draggable={false}
             aria-label="Make root ancestor"
             title="Make root ancestor"
             onClick={(e) => {
