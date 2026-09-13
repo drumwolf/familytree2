@@ -97,6 +97,25 @@ export function FamilyTree() {
     return null
   }
 
+  async function handleClear(slot: number) {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+    if (!user) return
+
+    const { error } = await supabase.from('people').delete().eq('user_id', user.id).eq('slot', slot)
+    if (error) {
+      console.error(error)
+      return
+    }
+
+    setPeople((prev) => {
+      const next = { ...prev }
+      delete next[slot]
+      return next
+    })
+  }
+
   // Swaps the data between two slots. If the target is empty, the source
   // slot's row is deleted instead of swapped into (so it goes back to being
   // blank rather than holding a copy of the target's empty fields).
@@ -192,6 +211,7 @@ export function FamilyTree() {
                 onSave={handleSave}
                 onMakeRoot={handleMakeRoot}
                 onMove={handleMove}
+                onClear={handleClear}
               />
             )
           })}

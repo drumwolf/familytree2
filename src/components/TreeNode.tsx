@@ -41,6 +41,7 @@ export function TreeNode({
   onSave,
   onMakeRoot,
   onMove,
+  onClear,
 }: {
   slot: number
   person: Person | undefined
@@ -50,6 +51,7 @@ export function TreeNode({
   onSave: (slot: number, input: PersonInput) => Promise<string | null>
   onMakeRoot: (slot: number) => void
   onMove: (sourceSlot: number, targetSlot: number) => void
+  onClear: (slot: number) => void
 }) {
   const isRoot = lineage === 'root'
   const [open, setOpen] = useState(false)
@@ -58,11 +60,22 @@ export function TreeNode({
   const [error, setError] = useState<string | null>(null)
   const [isDragging, setIsDragging] = useState(false)
   const [isDropTarget, setIsDropTarget] = useState(false)
+  const [confirmingClear, setConfirmingClear] = useState(false)
 
   function handleOpenChange(next: boolean) {
     if (next) setForm(blankInput(person))
     setError(null)
+    setConfirmingClear(false)
     setOpen(next)
+  }
+
+  function handleClear() {
+    if (!confirmingClear) {
+      setConfirmingClear(true)
+      return
+    }
+    setOpen(false)
+    onClear(slot)
   }
 
   async function handleSubmit(e: FormEvent) {
@@ -195,9 +208,16 @@ export function TreeNode({
             />
           </div>
           {error && <p className="text-destructive text-sm">{error}</p>}
-          <Button type="submit" disabled={saving}>
-            {saving ? 'Saving…' : 'Save'}
-          </Button>
+          <div className="flex gap-2">
+            <Button type="submit" disabled={saving} className="flex-1">
+              {saving ? 'Saving…' : 'Save'}
+            </Button>
+            {!isEmpty && (
+              <Button type="button" variant="destructive" onClick={handleClear} className="flex-1">
+                {confirmingClear ? 'Confirm clear' : 'Clear'}
+              </Button>
+            )}
+          </div>
         </form>
       </PopoverContent>
     </Popover>
