@@ -1,3 +1,4 @@
+import { Crosshair } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -78,11 +79,10 @@ export function TreeNode({
   const trigger = (
     <PopoverTrigger
       className={cn(
-        'absolute flex flex-col justify-center overflow-hidden rounded-lg border border-zinc-400 px-3 py-1 text-left shadow-sm transition-colors',
+        'flex h-full w-full flex-col justify-center overflow-hidden rounded-lg border border-zinc-400 px-3 py-1 text-left shadow-sm transition-colors',
         LINEAGE_STYLES[lineage],
         isEmpty && 'items-center justify-center',
       )}
-      style={{ left, top, width: NODE_WIDTH, height: NODE_HEIGHT }}
     >
       {isEmpty ? (
         <span className="text-muted-foreground text-xl">?</span>
@@ -99,16 +99,33 @@ export function TreeNode({
 
   return (
     <Popover open={open} onOpenChange={handleOpenChange}>
-      {person?.notes ? (
-        <Tooltip>
-          <TooltipTrigger render={trigger} />
-          <TooltipContent side="right" className="whitespace-pre-wrap bg-gray-50 dark:bg-gray-900">
-            {person.notes}
-          </TooltipContent>
-        </Tooltip>
-      ) : (
-        trigger
-      )}
+      <div className="absolute" style={{ left, top, width: NODE_WIDTH, height: NODE_HEIGHT }}>
+        {person?.notes ? (
+          <Tooltip>
+            <TooltipTrigger render={trigger} />
+            <TooltipContent side="right" className="whitespace-pre-wrap bg-gray-50 dark:bg-gray-900">
+              {person.notes}
+            </TooltipContent>
+          </Tooltip>
+        ) : (
+          trigger
+        )}
+        {!isRoot && (
+          <button
+            type="button"
+            aria-label="Make root ancestor"
+            title="Make root ancestor"
+            onClick={(e) => {
+              e.stopPropagation()
+              setOpen(false)
+              onMakeRoot(slot)
+            }}
+            className="absolute top-1/2 right-[10px] -translate-y-1/2 rounded-md bg-white/70 p-1.5 text-zinc-600 shadow-sm transition-colors hover:bg-white hover:text-zinc-900 dark:bg-black/40 dark:text-zinc-300 dark:hover:bg-black/60"
+          >
+            <Crosshair className="size-4" />
+          </button>
+        )}
+      </div>
       <PopoverContent>
         <form onSubmit={handleSubmit} className="flex flex-col gap-3">
           <div className="flex flex-col gap-1.5">
@@ -149,18 +166,6 @@ export function TreeNode({
           <Button type="submit" disabled={saving}>
             {saving ? 'Saving…' : 'Save'}
           </Button>
-          {!isRoot && (
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => {
-                onMakeRoot(slot)
-                setOpen(false)
-              }}
-            >
-              Make root ancestor
-            </Button>
-          )}
         </form>
       </PopoverContent>
     </Popover>
