@@ -27,6 +27,7 @@ function blankInput(person: Person | undefined): PersonInput {
   return {
     full_name: person?.full_name ?? '',
     birth_year: person?.birth_year?.toString() ?? '',
+    death_year: person?.death_year?.toString() ?? '',
     birthplace: person?.birthplace ?? '',
     notes: person?.notes ?? '',
   }
@@ -91,7 +92,8 @@ export function TreeNode({
     setOpen(false)
   }
 
-  const isEmpty = !person?.full_name && !person?.birth_year && !person?.birthplace && !person?.notes
+  const isEmpty =
+    !person?.full_name && !person?.birth_year && !person?.death_year && !person?.birthplace && !person?.notes
 
   const trigger = (
     <PopoverTrigger
@@ -115,7 +117,12 @@ export function TreeNode({
         <>
           <span className="truncate text-sm font-medium">{person?.full_name || '-'}</span>
           <span className="text-muted-foreground truncate text-xs">
-            {[person.birth_year, person.birthplace].filter(Boolean).join(' · ')}
+            {[
+              [person.birth_year, person.death_year].filter(Boolean).join('–'),
+              person.birthplace,
+            ]
+              .filter(Boolean)
+              .join(' · ')}
           </span>
         </>
       )}
@@ -189,6 +196,16 @@ export function TreeNode({
               inputMode="numeric"
               value={form.birth_year}
               onChange={(e) => setForm({ ...form, birth_year: e.target.value })}
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor={`death-year-${slot}`}>Death year</Label>
+            <Input
+              id={`death-year-${slot}`}
+              type="number"
+              inputMode="numeric"
+              value={form.death_year}
+              onChange={(e) => setForm({ ...form, death_year: e.target.value })}
             />
           </div>
           <div className="flex flex-col gap-1.5">

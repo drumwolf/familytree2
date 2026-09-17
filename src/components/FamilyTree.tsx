@@ -67,7 +67,11 @@ export function FamilyTree() {
       })
   }, [])
 
-  function upsertPerson(userId: string, slot: number, fields: Pick<Person, 'full_name' | 'birth_year' | 'birthplace' | 'notes'>) {
+  function upsertPerson(
+    userId: string,
+    slot: number,
+    fields: Pick<Person, 'full_name' | 'birth_year' | 'death_year' | 'birthplace' | 'notes'>,
+  ) {
     return supabase
       .from('people')
       .upsert({ user_id: userId, slot, ...fields }, { onConflict: 'user_id,slot' })
@@ -84,6 +88,7 @@ export function FamilyTree() {
     const { data, error } = await upsertPerson(user.id, slot, {
       full_name: input.full_name || null,
       birth_year: input.birth_year ? Number(input.birth_year) : null,
+      death_year: input.death_year ? Number(input.death_year) : null,
       birthplace: input.birthplace || null,
       notes: input.notes || null,
     })
@@ -134,6 +139,7 @@ export function FamilyTree() {
     const { data: newTarget, error: targetError } = await upsertPerson(user.id, targetSlot, {
       full_name: sourcePerson.full_name,
       birth_year: sourcePerson.birth_year,
+      death_year: sourcePerson.death_year,
       birthplace: sourcePerson.birthplace,
       notes: sourcePerson.notes,
     })
@@ -146,6 +152,7 @@ export function FamilyTree() {
       const { data: newSource, error: sourceError } = await upsertPerson(user.id, sourceSlot, {
         full_name: targetPerson.full_name,
         birth_year: targetPerson.birth_year,
+        death_year: targetPerson.death_year,
         birthplace: targetPerson.birthplace,
         notes: targetPerson.notes,
       })

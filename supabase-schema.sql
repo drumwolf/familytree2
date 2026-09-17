@@ -34,3 +34,6 @@ create policy "Users can delete their own people"
 -- slot numbers are no longer capped at 63.
 alter table public.people drop constraint people_slot_check;
 alter table public.people add constraint people_slot_check check (slot >= 1);
+
+-- Migration: add an optional death year field.
+alter table public.people add column death_year integer;
