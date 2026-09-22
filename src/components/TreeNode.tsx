@@ -14,9 +14,6 @@ import type { Lineage } from '@/lib/pedigree'
 import type { Person, PersonInput } from '@/lib/people'
 import { cn } from '@/lib/utils'
 
-export const NODE_WIDTH = 250
-export const NODE_HEIGHT = 60
-
 const LINEAGE_STYLES: Record<Lineage, string> = {
   root: 'bg-gray-200 hover:bg-gray-300',
   paternal: 'bg-red-100 hover:bg-red-200',
@@ -38,6 +35,9 @@ export function TreeNode({
   person,
   left,
   top,
+  width,
+  height,
+  compact,
   lineage,
   onSave,
   onMakeRoot,
@@ -48,6 +48,9 @@ export function TreeNode({
   person: Person | undefined
   left: number
   top: number
+  width: number
+  height: number
+  compact: boolean
   lineage: Lineage
   onSave: (slot: number, input: PersonInput) => Promise<string | null>
   onMakeRoot: (slot: number) => void
@@ -112,11 +115,13 @@ export function TreeNode({
       onDragEnd={() => setIsDragging(false)}
     >
       {isEmpty ? (
-        <span className="text-muted-foreground text-xl">?</span>
+        <span className={cn('text-muted-foreground', compact ? 'text-base' : 'text-xl')}>?</span>
       ) : (
         <>
-          <span className="truncate text-sm font-medium">{person?.full_name || '-'}</span>
-          <span className="text-muted-foreground truncate text-xs">
+          <span className={cn('truncate font-medium', compact ? 'text-xs' : 'text-sm')}>
+            {person?.full_name || '-'}
+          </span>
+          <span className={cn('text-muted-foreground truncate', compact ? 'text-[10px]' : 'text-xs')}>
             {[
               [person.birth_year, person.death_year].filter(Boolean).join('–'),
               person.birthplace,
@@ -133,7 +138,7 @@ export function TreeNode({
     <Popover open={open} onOpenChange={handleOpenChange}>
       <div
         className={cn('absolute', isDropTarget && 'rounded-lg ring-2 ring-primary ring-offset-1')}
-        style={{ left, top, width: NODE_WIDTH, height: NODE_HEIGHT }}
+        style={{ left, top, width, height }}
         onDragOver={(e) => {
           e.preventDefault()
           e.dataTransfer.dropEffect = 'move'

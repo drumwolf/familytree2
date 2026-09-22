@@ -1,42 +1,44 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { NODE_HEIGHT, NODE_WIDTH, TreeNode } from '@/components/TreeNode'
+import { TreeNode } from '@/components/TreeNode'
 import { supabase } from '@/lib/supabase'
+import { useTreeLayout, type TreeLayout } from '@/lib/layout'
 import { absoluteSlot, allSlots, gridColumn, gridRow, lineageOf, GENERATIONS, TOTAL_SLOTS } from '@/lib/pedigree'
 import type { Person, PersonInput } from '@/lib/people'
 
 const TRUE_ROOT = 1
 
-const ROW_UNIT = 48
-const COL_WIDTH = 320
-
-function nodeCenter(slot: number) {
+function nodeCenter(slot: number, layout: TreeLayout) {
   return {
-    x: (gridColumn(slot) - 1) * COL_WIDTH,
-    y: (gridRow(slot) - 1) * ROW_UNIT + NODE_HEIGHT / 2,
+    x: (gridColumn(slot) - 1) * layout.colWidth,
+    y: (gridRow(slot) - 1) * layout.rowUnit + layout.nodeHeight / 2,
   }
 }
 
-function connectorPath(parentOfSlot: number, ancestorSlot: number) {
-  const from = nodeCenter(parentOfSlot)
-  const to = nodeCenter(ancestorSlot)
-  const fromX = from.x + NODE_WIDTH
-  const midX = fromX + (COL_WIDTH - NODE_WIDTH) / 2
+function connectorPath(parentOfSlot: number, ancestorSlot: number, layout: TreeLayout) {
+  const from = nodeCenter(parentOfSlot, layout)
+  const to = nodeCenter(ancestorSlot, layout)
+  const fromX = from.x + layout.nodeWidth
+  const midX = fromX + (layout.colWidth - layout.nodeWidth) / 2
   return `M ${fromX} ${from.y} H ${midX} V ${to.y} H ${to.x}`
 }
 
-const connectors = allSlots()
-  .filter((slot) => 2 * slot + 1 <= TOTAL_SLOTS)
-  .flatMap((slot) => [
-    { key: `${slot}-${2 * slot}`, d: connectorPath(slot, 2 * slot) },
-    { key: `${slot}-${2 * slot + 1}`, d: connectorPath(slot, 2 * slot + 1) },
-  ])
+function buildConnectors(layout: TreeLayout) {
+  return allSlots()
+    .filter((slot) => 2 * slot + 1 <= TOTAL_SLOTS)
+    .flatMap((slot) => [
+      { key: `${slot}-${2 * slot}`, d: connectorPath(slot, 2 * slot, layout) },
+      { key: `${slot}-${2 * slot + 1}`, d: connectorPath(slot, 2 * slot + 1, layout) },
+    ])
+}
 
 export function FamilyTree() {
   const [people, setPeople] = useState<Record<number, Person>>({})
   const [loading, setLoading] = useState(true)
   const [viewRoot, setViewRoot] = useState(TRUE_ROOT)
   const [history, setHistory] = useState<number[]>([])
+  const layout = useTreeLayout()
+  const connectors = useMemo(() => buildConnectors(layout), [layout])
 
   function handleMakeRoot(newRoot: number) {
     setHistory((prev) => [...prev, viewRoot])
@@ -179,8 +181,8 @@ export function FamilyTree() {
   if (loading) return null
 
   const maxRow = Math.max(...allSlots().map(gridRow))
-  const height = maxRow * ROW_UNIT
-  const width = GENERATIONS * COL_WIDTH
+  const height = maxRow * layout.rowUnit
+  const width = GENERATIONS * layout.colWidth
   const rootPerson = people[viewRoot]
 
   return (
@@ -212,8 +214,11 @@ export function FamilyTree() {
                 key={slot}
                 slot={slot}
                 person={people[slot]}
-                left={(gridColumn(displaySlot) - 1) * COL_WIDTH}
-                top={(gridRow(displaySlot) - 1) * ROW_UNIT}
+                left={(gridColumn(displaySlot) - 1) * layout.colWidth}
+                top={(gridRow(displaySlot) - 1) * layout.rowUnit}
+                width={layout.nodeWidth}
+                height={layout.nodeHeight}
+                compact={layout.compact}
                 lineage={lineageOf(displaySlot)}
                 onSave={handleSave}
                 onMakeRoot={handleMakeRoot}
